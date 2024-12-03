@@ -44,10 +44,7 @@ pub enum NodeData {
     Element(Element),
 
     /// A Processing instruction.
-    ProcessingInstruction {
-        target: StrWrap,
-        contents: StrWrap,
-    },
+    ProcessingInstruction { target: StrWrap, contents: StrWrap },
 }
 
 /// An element with attributes.
@@ -143,7 +140,10 @@ impl Element {
                 let value = StrTendril::from(classes.join(" "));
                 // The namespace on the attribute name is almost always ns!().
                 let name = QualName::new(None, ns!(), local_name!("class"));
-                self.attrs.push(DAttribute { name, value: value.into() });
+                self.attrs.push(DAttribute {
+                    name,
+                    value: value.into(),
+                });
             }
         }
     }
@@ -233,8 +233,8 @@ impl Element {
             attrs
                 .into_iter()
                 .filter(|attr| !existing_names.contains(&attr.name))
-                .map(|attr| attr.into())
-            );
+                .map(|attr| attr.into()),
+        );
     }
 
     /// Renames the element.

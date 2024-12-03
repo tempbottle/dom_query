@@ -58,7 +58,9 @@ impl Tree {
     /// Creates a new text node with the given text, without parent
     pub fn new_text<T: Into<StrTendril>>(&self, text: T) -> NodeRef {
         let text = text.into();
-        let id = self.create_node(NodeData::Text { contents: text.into() });
+        let id = self.create_node(NodeData::Text {
+            contents: text.into(),
+        });
         NodeRef { id, tree: self }
     }
 

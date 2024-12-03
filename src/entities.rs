@@ -20,13 +20,11 @@ pub(crate) use inline::{HashSetFx, InnerHashMap, NodeIdSet};
 
 //pub type DString = tendril::Tendril<tendril::fmt::UTF8, tendril::Atomic>;
 
+use html5ever::{Attribute, QualName};
+use tendril::{StrTendril, Tendril};
 
-use html5ever::{QualName, Attribute};
-use tendril::{Tendril,StrTendril};
-
-#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Debug)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Debug, Default)]
 pub struct StrWrap(pub(crate) Tendril<tendril::fmt::UTF8, tendril::Atomic>);
-
 
 impl StrWrap {
     pub fn new() -> Self {
@@ -42,13 +40,11 @@ impl Deref for StrWrap {
     }
 }
 
-
 impl DerefMut for StrWrap {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
-
 
 impl From<StrTendril> for StrWrap {
     fn from(value: StrTendril) -> Self {
@@ -70,9 +66,9 @@ impl From<&str> for StrWrap {
     }
 }
 
-impl Into<StrTendril> for StrWrap {
-    fn into(self) -> StrTendril {
-        self.0.into_send().into()
+impl From<StrWrap> for StrTendril {
+    fn from(value: StrWrap) -> Self {
+        value.0.into_send().into()
     }
 }
 
@@ -82,7 +78,6 @@ impl Into<StrTendril> for StrWrap {
         DString(v.into_send().into())
     }
 }*/
-
 
 /// A tag attribute, e.g. `class="test"` in `<div class="test" ...>`.
 ///
@@ -98,16 +93,21 @@ pub struct DAttribute {
     pub value: StrWrap,
 }
 
-
 impl From<Attribute> for DAttribute {
-    fn from(value: Attribute) -> Self {
-        let v = value.value.into();
-        Self{name: value.name, value: v}
+    fn from(val: Attribute) -> Self {
+        let v = val.value.into();
+        Self {
+            name: val.name,
+            value: v,
+        }
     }
 }
 
-impl Into<Attribute> for DAttribute {
-    fn into(self) -> Attribute {
-        Attribute{name: self.name, value: self.value.into()}
+impl From<DAttribute> for Attribute {
+    fn from(val: DAttribute) -> Self {
+        Self {
+            name: val.name,
+            value: val.value.into(),
+        }
     }
 }
