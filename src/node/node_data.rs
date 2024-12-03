@@ -7,7 +7,7 @@ use selectors::attr::CaseSensitivity;
 use tendril::StrTendril;
 
 use super::NodeId;
-use crate::entities::{DAttribute, HashSetFx};
+use crate::entities::{Attr, HashSetFx};
 
 use crate::entities::StrWrap;
 
@@ -51,7 +51,7 @@ pub enum NodeData {
 #[derive(Debug, Clone)]
 pub struct Element {
     pub name: QualName,
-    pub attrs: Vec<DAttribute>,
+    pub attrs: Vec<Attr>,
 
     /// For HTML \<template\> elements, the [template contents].
     ///
@@ -140,7 +140,7 @@ impl Element {
                 let value = StrTendril::from(classes.join(" "));
                 // The namespace on the attribute name is almost always ns!().
                 let name = QualName::new(None, ns!(), local_name!("class"));
-                self.attrs.push(DAttribute {
+                self.attrs.push(Attr {
                     name,
                     value: value.into(),
                 });
@@ -193,7 +193,7 @@ impl Element {
                 let value = StrWrap::from(val);
                 // The namespace on the attribute name is almost always ns!().
                 let name = QualName::new(None, ns!(), LocalName::from(name));
-                self.attrs.push(DAttribute { name, value })
+                self.attrs.push(Attr { name, value })
             }
         }
     }
