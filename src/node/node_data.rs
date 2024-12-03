@@ -172,7 +172,7 @@ impl Element {
                 set.remove(remove);
             }
 
-            attr.value = StrWrap::from(set.into_iter().collect::<Vec<&str>>().join(" "));
+            attr.value = set.into_iter().collect::<Vec<&str>>().join(" ").into();
         }
     }
 
@@ -188,11 +188,11 @@ impl Element {
     pub fn set_attr(&mut self, name: &str, val: &str) {
         let attr = self.attrs.iter_mut().find(|a| &a.name.local == name);
         match attr {
-            Some(attr) => attr.value = StrWrap::from(val),
+            Some(attr) => attr.value = val.into(),
             None => {
-                let value = StrWrap::from(val);
                 // The namespace on the attribute name is almost always ns!().
                 let name = QualName::new(None, ns!(), LocalName::from(name));
+                let value = val.into();
                 self.attrs.push(Attr { name, value })
             }
         }

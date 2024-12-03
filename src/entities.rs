@@ -14,93 +14,105 @@ mod hash {
     pub type InnerHashMap<K, V> = HashMap<K, V>;
 }
 
-
 pub(crate) use hash::{HashSetFx, InnerHashMap, NodeIdSet};
 
-//pub type DString = tendril::Tendril<tendril::fmt::UTF8, tendril::Atomic>;
+#[cfg(feature = "atomic")]
+mod str_wrap {
+    use html5ever::{Attribute, QualName};
+    use std::ops::{Deref, DerefMut};
+    use tendril::{StrTendril, Tendril};
 
-use std::ops::{Deref, DerefMut};
-use html5ever::{Attribute, QualName};
-use tendril::{StrTendril, Tendril};
+    #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Debug, Default)]
+    pub struct StrWrap(pub(crate) Tendril<tendril::fmt::UTF8, tendril::Atomic>);
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Debug, Default)]
-pub struct StrWrap(pub(crate) Tendril<tendril::fmt::UTF8, tendril::Atomic>);
-
-impl StrWrap {
-    pub fn new() -> Self {
-        StrWrap(Tendril::new())
+    impl StrWrap {
+        pub fn new() -> Self {
+            StrWrap(Tendril::new())
+        }
     }
-}
 
-impl Deref for StrWrap {
-    type Target = Tendril<tendril::fmt::UTF8, tendril::Atomic>;
+    impl Deref for StrWrap {
+        type Target = Tendril<tendril::fmt::UTF8, tendril::Atomic>;
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
+        fn deref(&self) -> &Self::Target {
+            &self.0
+        }
     }
-}
 
-impl DerefMut for StrWrap {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+    impl DerefMut for StrWrap {
+        fn deref_mut(&mut self) -> &mut Self::Target {
+            &mut self.0
+        }
     }
-}
 
-impl From<StrTendril> for StrWrap {
-    fn from(value: StrTendril) -> Self {
-        StrWrap(value.into_send().into())
+    impl From<StrTendril> for StrWrap {
+        fn from(value: StrTendril) -> Self {
+            StrWrap(value.into_send().into())
+        }
     }
-}
 
-impl From<String> for StrWrap {
-    fn from(value: String) -> Self {
-        let v = Tendril::from(value);
-        StrWrap(v)
+
+    impl From<String> for StrWrap {
+        fn from(value: String) -> Self {
+            let v = Tendril::from(value);
+            StrWrap(v)
+        }
     }
-}
 
-impl From<&str> for StrWrap {
-    fn from(value: &str) -> Self {
-        let v = Tendril::from(value);
-        StrWrap(v)
+    impl From<&str> for StrWrap {
+        fn from(value: &str) -> Self {
+            let v = Tendril::from(value);
+            StrWrap(v)
+        }
     }
-}
 
-impl From<StrWrap> for StrTendril {
-    fn from(value: StrWrap) -> Self {
-        value.0.into_send().into()
+    impl From<StrWrap> for StrTendril {
+        fn from(value: StrWrap) -> Self {
+            value.0.into_send().into()
+        }
     }
-}
 
-/// A tag attribute, e.g. `class="test"` in `<div class="test" ...>`.
-///
-/// The namespace on the attribute name is almost always ns!("").
-/// The tokenizer creates all attributes this way, but the tree
-/// builder will adjust certain attribute names inside foreign
-/// content (MathML, SVG).
-#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Debug)]
-pub struct Attr {
-    /// The name of the attribute (e.g. the `class` in `<div class="test">`)
-    pub name: QualName,
-    /// The value of the attribute (e.g. the `"test"` in `<div class="test">`)
-    pub value: StrWrap,
-}
+    /// A tag attribute, e.g. `class="test"` in `<div class="test" ...>`.
+    ///
+    /// The namespace on the attribute name is almost always ns!("").
+    /// The tokenizer creates all attributes this way, but the tree
+    /// builder will adjust certain attribute names inside foreign
+    /// content (MathML, SVG).
+    #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Debug)]
+    pub struct Attr {
+        /// The name of the attribute (e.g. the `class` in `<div class="test">`)
+        pub name: QualName,
+        /// The value of the attribute (e.g. the `"test"` in `<div class="test">`)
+        pub value: StrWrap,
+    }
 
-impl From<Attribute> for Attr {
-    fn from(val: Attribute) -> Self {
-        let value = val.value.into();
-        Self {
-            name: val.name,
-            value,
+    impl From<Attribute> for Attr {
+        fn from(val: Attribute) -> Self {
+            let value = val.value.into();
+            Self {
+                name: val.name,
+                value,
+            }
+        }
+    }
+
+    impl From<Attr> for Attribute {
+        fn from(val: Attr) -> Self {
+            Self {
+                name: val.name,
+                value: val.value.into(),
+            }
         }
     }
 }
 
-impl From<Attr> for Attribute {
-    fn from(val: Attr) -> Self {
-        Self {
-            name: val.name,
-            value: val.value.into(),
-        }
-    }
+#[cfg(not(feature = "atomic"))]
+mod str_wrap {
+    use html5ever::Attribute;
+    use tendril::StrTendril;
+
+    pub type StrWrap = StrTendril;
+    pub type Attr = Attribute;
 }
+
+pub use str_wrap::{Attr, StrWrap};
