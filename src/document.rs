@@ -299,15 +299,15 @@ impl TreeSink for Document {
     /// Create a comment node.
     #[inline]
     fn create_comment(&self, text: StrTendril) -> Self::Handle {
-        self.tree.create_node(NodeData::Comment { contents: text })
+        self.tree.create_node(NodeData::Comment { contents: text.into() })
     }
 
     /// Create a Processing Instruction node.
     #[inline]
     fn create_pi(&self, target: StrTendril, data: StrTendril) -> Self::Handle {
         self.tree.create_node(NodeData::ProcessingInstruction {
-            target,
-            contents: data,
+            target: target.into(),
+            contents: data.into(),
         })
     }
 
@@ -333,7 +333,7 @@ impl TreeSink for Document {
                 }
 
                 self.tree
-                    .append_child_data_of(parent, NodeData::Text { contents: text })
+                    .append_child_data_of(parent, NodeData::Text { contents: text.into() })
             }
         }
     }
@@ -357,7 +357,7 @@ impl TreeSink for Document {
                     return;
                 }
 
-                let id = self.tree.create_node(NodeData::Text { contents: text });
+                let id = self.tree.create_node(NodeData::Text { contents: text.into() });
                 self.tree.insert_before_of(sibling, &id);
             }
 
@@ -399,9 +399,9 @@ impl TreeSink for Document {
         self.tree.append_child_data_of(
             &root,
             NodeData::Doctype {
-                name,
-                public_id,
-                system_id,
+                name: name.into(),
+                public_id: public_id.into(),
+                system_id: system_id.into(),
             },
         );
     }

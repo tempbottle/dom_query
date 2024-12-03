@@ -7,7 +7,9 @@ use selectors::attr::CaseSensitivity;
 use tendril::StrTendril;
 
 use super::NodeId;
-use crate::entities::HashSetFx;
+use crate::entities::{DAttribute, HashSetFx};
+
+use crate::entities::StrWrap;
 
 fn contains_class(classes: &str, target_class: &str) -> bool {
     classes.split_whitespace().any(|c| c == target_class)
@@ -27,24 +29,24 @@ pub enum NodeData {
     ///
     /// [dtd wiki]: https://en.wikipedia.org/wiki/Tree_type_declaration
     Doctype {
-        name: StrTendril,
-        public_id: StrTendril,
-        system_id: StrTendril,
+        name: StrWrap,
+        public_id: StrWrap,
+        system_id: StrWrap,
     },
 
     /// A text node.
-    Text { contents: StrTendril },
+    Text { contents: StrWrap },
 
     /// A comment.
-    Comment { contents: StrTendril },
+    Comment { contents: StrWrap },
 
     /// An element with attributes.
     Element(Element),
 
     /// A Processing instruction.
     ProcessingInstruction {
-        target: StrTendril,
-        contents: StrTendril,
+        target: StrWrap,
+        contents: StrWrap,
     },
 }
 
@@ -52,7 +54,7 @@ pub enum NodeData {
 #[derive(Debug, Clone)]
 pub struct Element {
     pub name: QualName,
-    pub attrs: Vec<Attribute>,
+    pub attrs: Vec<DAttribute>,
 
     /// For HTML \<template\> elements, the [template contents].
     ///
@@ -74,6 +76,7 @@ impl Element {
         template_contents: Option<NodeId>,
         mathml_annotation_xml_integration_point: bool,
     ) -> Element {
+        let attrs = attrs.into_iter().map(|a| a.into()).collect();
         Element {
             name,
             attrs,
@@ -127,7 +130,7 @@ impl Element {
 
         match attr {
             Some(attr) => {
-                let value: &mut StrTendril = &mut attr.value;
+                let value = &mut attr.value;
                 for item in class_set {
                     if !contains_class(value, item) {
                         value.push_slice(" ");
@@ -140,7 +143,7 @@ impl Element {
                 let value = StrTendril::from(classes.join(" "));
                 // The namespace on the attribute name is almost always ns!().
                 let name = QualName::new(None, ns!(), local_name!("class"));
-                self.attrs.push(Attribute { name, value });
+                self.attrs.push(DAttribute { name, value: value.into() });
             }
         }
     }
@@ -169,7 +172,7 @@ impl Element {
                 set.remove(remove);
             }
 
-            attr.value = StrTendril::from(set.into_iter().collect::<Vec<&str>>().join(" "));
+            attr.value = StrWrap::from(set.into_iter().collect::<Vec<&str>>().join(" "));
         }
     }
 
@@ -178,19 +181,19 @@ impl Element {
         self.attrs
             .iter()
             .find(|attr| &attr.name.local == name)
-            .map(|attr| attr.value.clone())
+            .map(|attr| attr.value.clone().into())
     }
 
     /// Sets the specified attribute's value.
     pub fn set_attr(&mut self, name: &str, val: &str) {
         let attr = self.attrs.iter_mut().find(|a| &a.name.local == name);
         match attr {
-            Some(attr) => attr.value = StrTendril::from(val),
+            Some(attr) => attr.value = StrWrap::from(val),
             None => {
-                let value = StrTendril::from(val);
+                let value = StrWrap::from(val);
                 // The namespace on the attribute name is almost always ns!().
                 let name = QualName::new(None, ns!(), LocalName::from(name));
-                self.attrs.push(Attribute { name, value })
+                self.attrs.push(DAttribute { name, value })
             }
         }
     }
@@ -229,8 +232,9 @@ impl Element {
         self.attrs.extend(
             attrs
                 .into_iter()
-                .filter(|attr| !existing_names.contains(&attr.name)),
-        );
+                .filter(|attr| !existing_names.contains(&attr.name))
+                .map(|attr| attr.into())
+            );
     }
 
     /// Renames the element.
